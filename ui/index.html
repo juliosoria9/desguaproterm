@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>desguaproterm</title>
+  <link rel="stylesheet" href="vendor/xterm.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header id="titlebar" data-tauri-drag-region>
+    <div class="brand" data-tauri-drag-region>
+      <button id="toggle-sidebar" class="icon-btn" data-icon="panel" title="Mostrar u ocultar el panel (Ctrl+Shift+B)"></button>
+      <span class="logo" aria-hidden="true" data-tauri-drag-region></span>
+      <span class="brand-name" data-tauri-drag-region>desguaproterm</span>
+    </div>
+    <div id="tabs" role="tablist" data-tauri-drag-region></div>
+    <button id="new-tab" class="icon-btn" data-icon="plus" title="Otra sesión en la misma carpeta (Ctrl+Shift+N)"></button>
+    <button id="new-wt" class="icon-btn" data-icon="branch" title="Otra sesión aislada en esta carpeta: trabaja en su propio worktree de git sin pisar a las demás"></button>
+    <div class="drag-space" data-tauri-drag-region></div>
+    <div class="layout-switch" role="group" aria-label="Vista">
+      <button data-layout="tabs" data-icon="single" title="Una sesión a la vez"></button>
+      <button data-layout="grid" data-icon="grid" title="Todas a la vez (Ctrl+Shift+G)"></button>
+    </div>
+    <div class="win-controls">
+      <button id="win-min" title="Minimizar"><svg viewBox="0 0 10 10"><path d="M0 5.5h10" stroke="currentColor"/></svg></button>
+      <button id="win-max" title="Maximizar">
+        <svg class="i-max" viewBox="0 0 10 10"><rect x=".5" y=".5" width="9" height="9" rx="1" fill="none" stroke="currentColor"/></svg>
+        <svg class="i-restore" viewBox="0 0 10 10"><path d="M2.5 2.5V1.5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-1" fill="none" stroke="currentColor"/><rect x=".5" y="2.5" width="7" height="7" rx="1" fill="none" stroke="currentColor"/></svg>
+      </button>
+      <button id="win-close" title="Cerrar"><svg viewBox="0 0 10 10"><path d="M.5.5l9 9M9.5.5l-9 9" stroke="currentColor"/></svg></button>
+    </div>
+  </header>
+
+  <div id="body">
+    <aside id="sidebar">
+      <div class="side-switch" role="tablist">
+        <button data-view="summary">Resumen <span class="count" id="needs-count"></span></button>
+        <button data-view="spend">Gasto</button>
+        <button data-view="projects">Proyectos</button>
+      </div>
+
+      <div class="side-view" id="view-summary">
+        <div class="scroll" id="summary"></div>
+      </div>
+
+      <div class="side-view" id="view-spend" hidden>
+        <div class="spend-chart" id="spend-chart"></div>
+        <div class="spend-filters">
+          <div class="seg" id="spend-period">
+            <button data-period="today">Hoy</button>
+            <button data-period="week">Semana</button>
+          </div>
+          <select id="spend-project" title="Proyecto"><option value="">Todos los proyectos</option></select>
+          <div class="spend-row">
+            <div class="search slim">
+              <span class="search-icon" data-icon="search"></span>
+              <input id="spend-search" placeholder="Buscar tarea…" spellcheck="false" autocomplete="off">
+            </div>
+            <select id="spend-sort" title="Ordenar">
+              <option value="cost">Más caras</option>
+              <option value="tokens">Más tokens</option>
+              <option value="lines">Más líneas</option>
+              <option value="recent">Recientes</option>
+            </select>
+          </div>
+        </div>
+        <div class="spend-total" id="spend-total"></div>
+        <div class="scroll" id="spend-list"></div>
+      </div>
+
+      <div class="side-view" id="view-projects" hidden>
+        <div class="search">
+          <span class="search-icon" data-icon="search"></span>
+          <input id="search" placeholder="Buscar proyecto…" spellcheck="false" autocomplete="off">
+          <kbd>Ctrl⇧T</kbd>
+        </div>
+        <div class="scroll" id="project-list"></div>
+        <button id="add-folder" class="wide-btn"><span data-icon="folderPlus"></span>Añadir carpeta</button>
+      </div>
+
+      <div class="side-foot">
+        <button id="open-settings" class="foot-btn"><span data-icon="gear"></span>Ajustes</button>
+        <span class="foot-info" id="foot-info"></span>
+      </div>
+    </aside>
+
+    <main id="stage">
+      <section id="empty">
+        <div class="empty-inner">
+          <div class="hero-logo"></div>
+          <h1>¿En qué trabajamos hoy?</h1>
+          <p>Elige un proyecto y se abre Claude ahí mismo. Puedes tener varias sesiones a la vez,<br>y al volver a encender el PC se reabren solas, cada una con su conversación.</p>
+          <div id="empty-cards"></div>
+          <div class="tips">
+            <span><kbd>Ctrl⇧T</kbd> buscar proyecto</span>
+            <span><kbd>Ctrl⇧N</kbd> otra sesión aquí</span>
+            <span><kbd>Ctrl⇧G</kbd> ver todas</span>
+            <span><kbd>Ctrl⇧A</kbd> panel de agentes</span>
+            <span><kbd>Ctrl Tab</kbd> cambiar</span>
+          </div>
+        </div>
+      </section>
+      <div id="panes" class="tabs"></div>
+      <div id="toast" hidden></div>
+      <div id="drop-hint" hidden></div>
+    </main>
+  </div>
+
+  <div id="settings" class="modal" hidden>
+    <div class="modal-card" role="dialog" aria-label="Ajustes">
+      <header><h2>Ajustes</h2><button class="icon-btn" id="close-settings" data-icon="x" title="Cerrar (Esc)"></button></header>
+      <section>
+        <h3>Tema</h3>
+        <div id="theme-grid"></div>
+      </section>
+      <section>
+        <h3>General</h3>
+        <div class="set-row">
+          <div class="txt"><b>Tamaño de letra</b><span>También con Ctrl + rueda del ratón sobre la terminal.</span></div>
+          <div class="stepper"><button id="font-dec" class="mini-btn">−</button><span id="font-size">14</span><button id="font-inc" class="mini-btn">+</button></div>
+        </div>
+        <div class="set-row">
+          <div class="txt"><b>Dormir sesiones inactivas</b><span>Cierra el Claude de las sesiones acabadas que no estás mirando (≈ 0,5 GB cada una). Se despiertan solas, con su conversación, al volver a ellas.</span></div>
+          <select id="sleep-after"><option value="0">Nunca</option><option value="15">A los 15 min</option><option value="30">A los 30 min</option><option value="60">A la hora</option><option value="120">A las 2 h</option></select>
+        </div>
+        <div class="set-row">
+          <div class="txt"><b>Al abrir, arrancar solo la pestaña activa</b><span>Las demás se quedan dormidas hasta que entres en ellas: arranque más rápido y menos memoria.</span></div>
+          <label class="toggle"><input type="checkbox" id="lazy-toggle"><span class="switch"></span></label>
+        </div>
+        <div class="set-row">
+          <div class="txt"><b>Avisos de Windows</b><span>Cuando una sesión que no estás mirando termina o te pide permiso (con botones para aprobar o rechazar).</span></div>
+          <label class="toggle"><input type="checkbox" id="notify-toggle"><span class="switch"></span></label>
+        </div>
+        <div class="set-row">
+          <div class="txt"><b>Avisar del límite del plan</b><span>Cuando el uso de 5 h o el semanal llegue a este porcentaje.</span></div>
+          <select id="limit-alert"><option value="0">No avisar</option><option value="50">Al 50 %</option><option value="75">Al 75 %</option><option value="80">Al 80 %</option><option value="90">Al 90 %</option></select>
+        </div>
+        <div class="set-row">
+          <div class="txt"><b>Avisar de tareas caras</b><span>Cuando una tarea pase de este precio por API.</span></div>
+          <select id="cost-alert"><option value="0">No avisar</option><option value="1">1 US$</option><option value="2">2 US$</option><option value="5">5 US$</option><option value="10">10 US$</option></select>
+        </div>
+        <div class="set-row">
+          <div class="txt"><b>Títulos cortos con IA</b><span>Resume de qué va cada sesión en 2-3 palabras con una llamada mínima a Haiku (una vez por título).</span></div>
+          <label class="toggle"><input type="checkbox" id="ai-toggle"><span class="switch"></span></label>
+        </div>
+        <div class="set-row">
+          <div class="txt"><b>Abrir al encender el PC</b><span>Arranca sola con Windows y reabre tus sesiones.</span></div>
+          <label class="toggle"><input type="checkbox" id="login-toggle"><span class="switch"></span></label>
+        </div>
+        <div class="set-row">
+          <div class="txt"><b>Ahorrar memoria (sin GPU)</b><span>Unos 80 MB menos; dibuja con el procesador. Se aplica al volver a abrir la app.</span></div>
+          <label class="toggle"><input type="checkbox" id="lowmem-toggle"><span class="switch"></span></label>
+        </div>
+      </section>
+      <section></section>
+    </div>
+  </div>
+
+  <div id="img-preview" hidden><img alt=""></div>
+  <div id="diff-pop" hidden>
+    <div class="dp-head"><b class="dp-file"></b><span class="dp-stats"></span><button class="pane-btn dp-close" title="Cerrar (Esc)">✕</button></div>
+    <pre class="dp-body"></pre>
+  </div>
+
+  <script src="vendor/xterm.js"></script>
+  <script src="vendor/addon-fit.js"></script>
+  <script src="vendor/addon-web-links.js"></script>
+  <script src="vendor/addon-webgl.js"></script>
+  <script src="themes.js"></script>
+  <script src="bridge.js"></script>
+  <script src="panels.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
