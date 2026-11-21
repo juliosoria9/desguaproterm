@@ -1127,7 +1127,9 @@ fn ai_short_title(claude: &Path, title: &str) -> Option<String> {
     let prompt = format!(
         "Resume este título en 2 o 3 palabras, en su mismo idioma. Responde solo con esas palabras, sin comillas ni punto final.\nTítulo: {title}"
     );
-    let mut cmd = Command::new(claude);
+    let (program, pre) = crate::claude_command(claude);
+    let mut cmd = Command::new(program);
+    cmd.args(pre);
     cmd.args(["-p", &prompt, "--model", "haiku", "--no-session-persistence", "--strict-mcp-config", "--disable-slash-commands", "--tools", ""]);
     cmd.current_dir(std::env::temp_dir());
     for (k, _) in std::env::vars_os() {

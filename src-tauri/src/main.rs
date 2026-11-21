@@ -141,6 +141,41 @@ fn find_claude(home: &Path) -> Option<PathBuf> {
     if local.is_file() { Some(local) } else { which(&["claude.exe", "claude.cmd"]) }
 }
 
+/// Programa y primeros argumentos para lanzar Claude. Instalado con npm es un `claude.cmd` que
+/// solo llama a su .exe (o a node con cli.js): se lanza eso directamente, porque pasar por cmd
+/// rompe los argumentos con comillas o `|`.
+pub(crate) fn claude_command(claude: &Path) -> (PathBuf, Vec<OsString>) {
+    if !claude.extension().is_some_and(|e| e.eq_ignore_ascii_case("cmd")) {
+        return (claude.to_path_buf(), vec![]);
+    }
+    let dir = claude.parent().unwrap_or(Path::new("."));
+    // el shim de npm termina en: "%dp0%\node_modules\...\bin\claude.exe" %*
+    let target = fs::read_to_string(claude)
+        .ok()
+        .and_then(|t| t.rsplit("\"%dp0%\\").next().and_then(|s| s.split('"').next()).map(|rel| dir.join(rel)))
+        .filter(|p| p.is_file());
+    let node = || Some(dir.join("node.exe")).filter(|p| p.is_file()).or_else(|| which(&["node.exe"]));
+    match target {
+        Some(t) if t.extension().is_some_and(|e| e.eq_ignore_ascii_case("exe")) => (t, vec![]),
+        Some(t) if node().is_some() => (node().unwrap(), vec![t.into_os_string()]),
+        _ => (
+            std::env::var_os("ComSpec").unwrap_or_else(|| "cmd.exe".into()).into(),
+            vec!["/d".into(), "/s".into(), "/c".into(), claude.as_os_str().to_owned()],
+        ),
+    }
+}
+
+/// La configuración de las sesiones va en un archivo temporal y no como texto en la línea de
+/// comandos: así no la rompe nada que tenga que pasar por cmd.
+fn settings_arg(json: &str) -> OsString {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    json.hash(&mut h);
+    let f = std::env::temp_dir().join(format!("desguaproterm-{:016x}.json", h.finish()));
+    let ok = fs::read_to_string(&f).is_ok_and(|s| s == json) || fs::write(&f, json).is_ok();
+    if ok { f.into_os_string() } else { json.into() }
+}
+
 fn windows_build() -> u32 {
     use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey};
     RegKey::predef(HKEY_LOCAL_MACHINE)
@@ -168,8 +203,8 @@ fn strip_env(k: &str) -> bool {
 
 // ---------- hooks ----------
 // Claude Code ejecuta `desguaproterm.exe --hook` en cada evento de las sesiones abiertas desde
-// aquí. La configuración no está en ningún archivo: se pasa como texto con --settings y solo
-// afecta a esas sesiones (tu configuración global de Claude no se toca).
+// aquí. La configuración se pasa con --settings (en un archivo temporal) y solo afecta a esas
+// sesiones (tu configuración global de Claude no se toca).
 fn hook_settings_json() -> Option<String> {
     let exe = std::env::current_exe().ok()?;
     let cmd = json!({ "type": "command", "command": format!("\"{}\" --hook", exe.to_string_lossy().replace('\\', "/")) });
@@ -302,7 +337,7 @@ async fn pty_spawn(
     let mut args: Vec<OsString> = vec![if resume { "--resume" } else { "--session-id" }.into(), session_id.clone().into()];
     if let Some(hook) = &core.hook_settings {
         args.push("--settings".into());
-        args.push(hook.into());
+        args.push(settings_arg(hook));
     }
     // sesión aislada: Claude crea un worktree de git y trabaja en él sin pisar a las demás
     if !resume && worktree == Some(true) {
@@ -330,14 +365,9 @@ async fn pty_spawn(
         }
         args.push(p.into());
     }
-    let mut cmd = if claude.extension().is_some_and(|e| e.eq_ignore_ascii_case("cmd")) {
-        let mut c = CommandBuilder::new(std::env::var_os("ComSpec").unwrap_or_else(|| "cmd.exe".into()));
-        c.args(["/d", "/s", "/c"]);
-        c.arg(&claude);
-        c
-    } else {
-        CommandBuilder::new(&claude)
-    };
+    let (program, pre) = claude_command(&claude);
+    let mut cmd = CommandBuilder::new(&program);
+    cmd.args(&pre);
     cmd.args(&args);
     cmd.cwd(&cwd);
     for (k, _) in std::env::vars_os() {
@@ -915,4 +945,22 @@ fn main() {
             }
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    /// El claude.cmd que crea npm no debe lanzarse con cmd: se lanza el claude.exe que llama.
+    #[test]
+    fn npm_shim_launches_its_exe() {
+        let dir = std::env::temp_dir().join(format!("dgp-shim-{}", std::process::id()));
+        let bin = dir.join("node_modules").join("@anthropic-ai").join("claude-code").join("bin");
+        std::fs::create_dir_all(&bin).unwrap();
+        std::fs::write(bin.join("claude.exe"), b"").unwrap();
+        let shim = dir.join("claude.cmd");
+        std::fs::write(&shim, "@ECHO off\r\nGOTO start\r\n:find_dp0\r\nSET dp0=%~dp0\r\nEXIT /b\r\n:start\r\nSETLOCAL\r\nCALL :find_dp0\r\n\"%dp0%\\node_modules\\@anthropic-ai\\claude-code\\bin\\claude.exe\"   %*\r\n").unwrap();
+        let (prog, pre) = super::claude_command(&shim);
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(prog, bin.join("claude.exe"));
+        assert!(pre.is_empty());
+    }
 }
