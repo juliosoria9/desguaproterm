@@ -439,18 +439,20 @@ function screenText(v, lines) {
   }
   return out.join('\n');
 }
+/** Modo que muestra Claude: el último "… mode on" de la pantalla (esté abajo o tras la caja de texto). */
 function currentMode(v) {
-  const t = screenText(v, 4).toLowerCase();
-  if (t.includes('plan mode on')) return 'plan';
-  if (t.includes('accept edits on')) return 'acceptEdits';
-  if (t.includes('auto mode on')) return 'auto';
-  if (t.includes('bypass permissions on')) return 'bypassPermissions';
-  if (t.includes('manual mode on')) return 'manual';
-  return '';
+  const t = screenText(v, v.term.rows).toLowerCase();
+  const modes = [['plan mode on', 'plan'], ['accept edits on', 'acceptEdits'], ['auto mode on', 'auto'], ['bypass permissions on', 'bypassPermissions'], ['manual mode on', 'manual']];
+  let best = ['', -1];
+  for (const [text, mode] of modes) {
+    const i = t.lastIndexOf(text);
+    if (i > best[1]) best = [mode, i];
+  }
+  return best[0];
 }
 function currentEffort(v) {
-  const m = /\b(low|medium|high|xhigh|max)\s*·\s*\/effort/i.exec(screenText(v, 10));
-  return m ? m[1].toLowerCase() : '';
+  const all = [...screenText(v, v.term.rows).matchAll(/\b(low|medium|high|xhigh|max)\s*(?:·\s*\/effort|effort\b)/gi)];
+  return all.length ? all[all.length - 1][1].toLowerCase() : '';
 }
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 /** El modo se cambia como lo harías tú: Shift+Tab hasta llegar al que quieres. */
