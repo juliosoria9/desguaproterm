@@ -11,6 +11,7 @@ Todas tus sesiones a la vista, qué está haciendo cada una, cuánto gasta y cu�
 ![Rust + Tauri 2](https://img.shields.io/badge/Rust-Tauri%202-B7410E?logo=rust&logoColor=white)
 ![Un solo .exe](https://img.shields.io/badge/un%20solo%20.exe-5%2C5%20MB-ff8a5c)
 ![Para Claude Code](https://img.shields.io/badge/para-Claude%20Code-d97757)
+[![Licencia MIT](https://img.shields.io/badge/licencia-MIT-3da639)](LICENSE)
 
 <img src="docs/principal.png" alt="desguaproterm: resumen de sesiones, Claude trabajando y panel de agentes">
 
@@ -141,6 +142,10 @@ powershell -ExecutionPolicy Bypass -File instalar.ps1   # compila e instala cons
 | `src-tauri/src/pricing.rs` | Tarifas de la API por modelo |
 | `src-tauri/src/store.rs` | Datos guardados dentro del `.exe` |
 | `ui/` | Interfaz: `app.js`, `panels.js`, `themes.js`, estilos |
+
+## Licencia
+
+[MIT](LICENSE): puedes usarlo, modificarlo y compartirlo libremente, manteniendo el aviso de autor.
 
 ## Créditos
 
