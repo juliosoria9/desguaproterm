@@ -20,13 +20,13 @@ Todas tus sesiones a la vista, qué está haciendo cada una, cuánto gasta y cu�
 
 Cuando tienes cuatro o cinco Claude Code abiertos, lo difícil no es usarlos: es saber cuál ha terminado, cuál está esperando tu permiso y cuánto llevas gastado. **desguaproterm** pone todo eso en una sola ventana, y al volver a encender el PC te devuelve cada sesión con su conversación, donde la dejaste.
 
-## ✨ Lo que hace
+## Lo que hace
 
 <table>
 <tr>
 <td width="50%" valign="top">
 
-### 🧭 Todo a la vista
+### Todo a la vista
 - **Pestañas o cuadrícula.** Cada pestaña dice en 2-3 palabras de qué va su sesión.
 - **Resumen en vivo:** *Te necesitan*, *Trabajando*, *Acabadas*.
 - **Aprobar o rechazar** permisos sin cambiar de pestaña, o desde el **aviso de Windows**.
@@ -35,7 +35,7 @@ Cuando tienes cuatro o cinco Claude Code abiertos, lo difícil no es usarlos: es
 </td>
 <td width="50%" valign="top">
 
-### 💸 Gasto bajo control
+### Gasto bajo control
 - **Tokens y precio por API** de cada tarea, cada sesión y cada día.
 - **% de la semana** al lado de cada consumo.
 - **Límites reales de tu plan** (5 h y semanal) y aviso al llegar al 80 %.
@@ -46,7 +46,7 @@ Cuando tienes cuatro o cinco Claude Code abiertos, lo difícil no es usarlos: es
 <tr>
 <td valign="top">
 
-### ♻️ Nunca pierdes una sesión
+### Nunca pierdes una sesión
 - Al reabrir la app vuelven **las mismas pestañas con su conversación**, aunque hayas hecho `/clear`.
 - **Sesiones dormidas:** las que llevan un rato acabadas sueltan su memoria (~0,5 GB cada una) y se despiertan solas al volver a ellas.
 - **Sesiones aisladas** en su propio *worktree* de git, para que dos Claude no se pisen en el mismo proyecto.
@@ -54,7 +54,7 @@ Cuando tienes cuatro o cinco Claude Code abiertos, lo difícil no es usarlos: es
 </td>
 <td valign="top">
 
-### 🎛️ Cómodo de verdad
+### Cómodo de verdad
 - **Modelo, esfuerzo y modo** por sesión, sin tocar tu configuración global.
 - **Lanzador de proyectos** y **buscador** en todas tus conversaciones antiguas.
 - **Ctrl+V con imágenes**, arrastrar archivos y vista previa al pasar por `[Image #1]`.
@@ -64,7 +64,7 @@ Cuando tienes cuatro o cinco Claude Code abiertos, lo difícil no es usarlos: es
 </tr>
 </table>
 
-## 🖼️ Capturas
+## Capturas
 
 <table>
 <tr>
@@ -79,7 +79,7 @@ Cuando tienes cuatro o cinco Claude Code abiertos, lo difícil no es usarlos: es
 
 <sub>Las capturas usan proyectos y datos de ejemplo.</sub>
 
-## 🚀 Empezar
+## Empezar
 
 1. Ten **[Claude Code](https://docs.claude.com/en/docs/claude-code)** instalado y con la sesión iniciada.
 2. Descarga **`desguaproterm.exe`** desde [Releases](../../releases/latest).
@@ -103,7 +103,7 @@ Cuando tienes cuatro o cinco Claude Code abiertos, lo difícil no es usarlos: es
 | `Ctrl+,` | Ajustes y temas |
 | `Shift+Enter` | Salto de línea en el mensaje |
 
-## 🔧 Cómo funciona
+## Cómo funciona
 
 ```mermaid
 flowchart LR
@@ -124,9 +124,7 @@ flowchart LR
 - **Todo cabe en un `.exe` de 5,5 MB.** Tus pestañas y ajustes se guardan dentro del propio archivo (flujos de datos NTFS), sin carpetas de configuración.
 - **Nada sale de tu PC:** sin telemetría, sin cuentas y sin servidores propios.
 
-<a id="compilar"></a>
-
-## 🛠️ Compilar
+## Compilar
 
 Hace falta [Rust](https://rustup.rs), [Node.js](https://nodejs.org) y las Build Tools de Visual Studio (C++).
 
@@ -144,7 +142,7 @@ powershell -ExecutionPolicy Bypass -File instalar.ps1   # compila e instala cons
 | `src-tauri/src/store.rs` | Datos guardados dentro del `.exe` |
 | `ui/` | Interfaz: `app.js`, `panels.js`, `themes.js`, estilos |
 
-## 🙌 Créditos
+## Créditos
 
 Hecho con [Tauri](https://tauri.app), [xterm.js](https://xtermjs.org) (licencia MIT, ver `ui/vendor/LICENSE-xterm.txt`) y [portable-pty](https://github.com/wezterm/wezterm/tree/main/pty).
 
